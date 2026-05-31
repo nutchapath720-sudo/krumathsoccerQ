@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Winner Stays On</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pitch: #1a6b2e;
+    --pitch-light: #2a8a3e;
+    --pitch-line: rgba(255,255,255,0.18);
+    --accent: #f5c518;
+    --accent-dim: #c49a0e;
+    --danger: #e84040;
+    --draw: #5b8dee;
+    --surface: #111c14;
+    --surface2: #172219;
+    --surface3: #1e2e21;
+    --surface4: #243328;
+    --text: #f0ede4;
+    --text-muted: #8aab8e;
+    --text-dim: #5a7a5e;
+    --radius: 10px;
+    --streak-bg: #c49a0e22;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--surface);
+    color: var(--text);
+    min-height: 100vh;
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: 2rem;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--pitch);
+    padding: 1rem 1.25rem 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--pitch-line);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--accent);
+    line-height: 1;
+  }
+  header p { font-size: 0.72rem; color: rgba(255,255,255,0.55); margin-top: 2px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .btn-reset {
+    background: rgba(232,64,64,0.12);
+    border: 1px solid rgba(232,64,64,0.35);
+    color: #e84040;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-reset:hover { background: rgba(232,64,64,0.22); }
+
+  /* SECTIONS */
+  section { padding: 1rem 1.25rem 0; }
+  .section-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.65rem;
+  }
+
+  /* MATCH CARD */
+  .match-card {
+    background: var(--surface2);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .match-pitch {
+    background: var(--pitch);
+    padding: 1rem 1rem 0.75rem;
+    position: relative;
+  }
+  .match-pitch::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--pitch-line);
+    transform: translateX(-50%);
+  }
+  .match-pitch::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--pitch-line);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .match-teams {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+  .match-team { text-align: center; }
+  .match-team.right { }
+  .team-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: #fff;
+    line-height: 1.1;
+    word-break: break-word;
+  }
+  .team-players {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.62);
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+  .vs-badge {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.05em;
+    padding: 0 0.5rem;
+  }
+  .streak-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem 0;
+    position: relative;
+    z-index: 1;
+  }
+  .streak-badge {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .streak-badge.active { color: var(--accent); }
+  .streak-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: inline-block;
+  }
+  .streak-dot.on { background: var(--accent); box-shadow: 0 0 4px var(--accent); }
+
+  /* ACTION BUTTONS */
+  .match-actions {
+    padding: 0.75rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    background: var(--surface3);
+  }
+  .match-actions .draw-row {
+    grid-column: 1 / -1;
+  }
+  .btn-win {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.65rem 0.5rem;
+    border-radius: 7px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.1s, filter 0.1s;
+    line-height: 1.2;
+  }
+  .btn-win:active { transform: scale(0.97); }
+  .btn-t1 {
+    background: linear-gradient(135deg, #2d7a45, #1e5a30);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .btn-t2 {
+    background: linear-gradient(135deg, #1e4a7a, #14335a);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .btn-draw {
+    background: rgba(91,141,238,0.15);
+    color: var(--draw);
+    border: 1px solid rgba(91,141,238,0.3);
+    width: 100%;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.55rem;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-draw:hover { background: rgba(91,141,238,0.25); }
+
+  /* TOAST */
+  #toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface4);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 0.6rem 1.25rem;
+    border-radius: 8px;
+    white-space: nowrap;
+    transition: transform 0.3s cubic-bezier(.34,1.56,.64,1), opacity 0.3s;
+    opacity: 0;
+    z-index: 100;
+    pointer-events: none;
+    max-width: 90vw;
+    text-align: center;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* QUEUE */
+  .queue-list { display: flex; flex-direction: column; gap: 0.45rem; }
+  .queue-item {
+    background: var(--surface2);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 0.55rem 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    transition: background 0.15s;
+  }
+  .queue-pos {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .queue-info { flex: 1; min-width: 0; }
+  .queue-team-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .queue-players {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .queue-streak {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* ADD TEAM FORM */
+  .add-form {
+    background: var(--surface2);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: var(--radius);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .form-field { display: flex; flex-direction: column; gap: 0.3rem; }
+  .form-field label { font-size: 0.7rem; color: var(--text-dim); letter-spacing: 0.06em; text-transform: uppercase; }
+  .form-field input {
+    background: var(--surface3);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 7px;
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 0.9rem;
+    padding: 0.55rem 0.75rem;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  .form-field input:focus { border-color: var(--pitch-light); }
+  .form-field input::placeholder { color: var(--text-dim); }
+  .btn-add {
+    background: var(--pitch);
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 0.65rem;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    margin-top: 0.15rem;
+  }
+  .btn-add:hover { background: var(--pitch-light); }
+  .btn-add:active { transform: scale(0.98); }
+
+  /* WAITING FOR TEAMS */
+  .waiting-notice {
+    background: var(--surface2);
+    border: 1px solid rgba(245,197,24,0.2);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  .waiting-notice strong { color: var(--accent); font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; letter-spacing: 0.04em; }
+
+  .divider { height: 1px; background: rgba(255,255,255,0.05); margin: 0.25rem 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>⚽ Winner Stays</h1>
+    <p>Queue Manager</p>
+  </div>
+  <button class="btn-reset" onclick="confirmReset()">Reset All</button>
+</header>
+
+<section>
+  <div class="section-title">Current Match</div>
+  <div id="match-area"></div>
+</section>
+
+<section style="margin-top:1rem;">
+  <div class="section-title">Waiting Queue</div>
+  <div id="queue-area" class="queue-list"></div>
+</section>
+
+<section style="margin-top:1rem;">
+  <div class="section-title">Add Team</div>
+  <div class="add-form">
+    <div class="form-field">
+      <label>Team Name</label>
+      <input type="text" id="inp-team" placeholder="e.g. Red Devils" maxlength="24">
+    </div>
+    <div class="form-field">
+      <label>Players (comma-separated)</label>
+      <input type="text" id="inp-players" placeholder="e.g. Ali, Sam, Leo">
+    </div>
+    <div class="form-field">
+      <label>Max Wins Allowed</label>
+      <select id="inp-maxwins" style="background:var(--surface3);border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:var(--text);font-family:'Barlow',sans-serif;font-size:0.9rem;padding:0.55rem 0.75rem;outline:none;width:100%;">
+        <option value="2">2 wins</option>
+        <option value="3">3 wins</option>
+        <option value="4">4 wins</option>
+        <option value="5">5 wins</option>
+      </select>
+    </div>
+    <button class="btn-add" onclick="addTeam()">+ Add to Queue</button>
+  </div>
+</section>
+
+<div id="toast"></div>
+
+<script>
+let state = {
+  playing: [],   // [team1, team2]
+  queue: []      // [...teams]
+};
+
+// team = { name, players: [], streak: 0 }
+
+function saveState() {
+  try { localStorage.setItem('wso_state', JSON.stringify(state)); } catch(e) {}
+}
+function loadState() {
+  try {
+    const s = localStorage.getItem('wso_state');
+    if (s) state = JSON.parse(s);
+  } catch(e) {}
+}
+
+function addTeam() {
+  const nameEl = document.getElementById('inp-team');
+  const playersEl = document.getElementById('inp-players');
+  const name = nameEl.value.trim();
+  const playersRaw = playersEl.value.trim();
+  if (!name) { showToast('Enter a team name'); nameEl.focus(); return; }
+  const players = playersRaw ? playersRaw.split(',').map(p => p.trim()).filter(Boolean) : [];
+  const team = { name, players, streak: 0 };
+
+  // Always push to queue first, then promote — prevents duplicate slot assignment
+  state.queue.push(team);
+  promoteFromQueue();
+
+  nameEl.value = '';
+  playersEl.value = '';
+  nameEl.focus();
+  saveState();
+  render();
+  const inMatch = state.playing.includes(team);
+  showToast(`${name} added to ${inMatch ? 'match' : 'queue'}`);
+}
+
+function teamWins(winnerIdx) {
+  const winner = state.playing[winnerIdx];
+  const loser = state.playing[1 - winnerIdx];
+  winner.streak += 1;
+
+  const maxWins = parseInt(document.getElementById('inp-maxwins').value, 10);
+  if (winner.streak >= maxWins) {
+    // Max streak reached — bench both: loser first, then winner
+    winner.streak = 0;
+    loser.streak = 0;
+    state.playing = [];
+    state.queue.push(loser);
+    state.queue.push(winner);
+    promoteFromQueue();
+    showToast(`🏆 Max wins reached! Both teams benched.`);
+  } else {
+    // Winner stays — pull next challenger from queue BEFORE pushing loser,
+    // so the loser cannot immediately re-enter as the next opponent
+    loser.streak = 0;
+    const next = state.queue.shift();
+    state.queue.push(loser);   // loser goes to back AFTER shift
+    if (next) {
+      state.playing = [winner, next];
+      showToast(`${winner.name} wins! ${next.name} steps up.`);
+    } else {
+      state.playing = [winner];
+      showToast(`${winner.name} wins! Waiting for challenger...`);
+    }
+  }
+  saveState();
+  render();
+}
+
+function draw() {
+  const t1 = state.playing[0];
+  const t2 = state.playing[1];
+  if (!t1 || !t2) return;
+  t1.streak = 0;
+  t2.streak = 0;
+  state.playing = [];          // clear first
+  state.queue.push(t1);
+  state.queue.push(t2);
+  promoteFromQueue();          // pull fresh top-2 from queue
+  showToast('Draw! Both teams go to the back of the queue.');
+  saveState();
+  render();
+}
+
+function promoteFromQueue() {
+  while (state.playing.length < 2 && state.queue.length > 0) {
+    state.playing.push(state.queue.shift());
+  }
+}
+
+function confirmReset() {
+  if (confirm('Reset everything? All teams and data will be cleared.')) {
+    state = { playing: [], queue: [] };
+    saveState();
+    render();
+    showToast('All data cleared.');
+  }
+}
+
+function renderMatch() {
+  const el = document.getElementById('match-area');
+  if (state.playing.length === 0) {
+    el.innerHTML = `<div class="waiting-notice"><strong>No Teams Yet</strong><br>Add at least 2 teams below to start.</div>`;
+    return;
+  }
+  if (state.playing.length === 1) {
+    const t = state.playing[0];
+    el.innerHTML = `<div class="waiting-notice">
+      <strong>${escHtml(t.name)}</strong> is waiting for a challenger.<br>
+      <span style="font-size:0.75rem; color: var(--text-dim); margin-top:4px; display:block;">Add another team to begin the match.</span>
+    </div>`;
+    return;
+  }
+  const t1 = state.playing[0];
+  const t2 = state.playing[1];
+
+  function streakDots(n) {
+    let d = '';
+    for (let i = 0; i < 2; i++) {
+      d += `<span class="streak-dot${i < n ? ' on' : ''}"></span>`;
+    }
+    return d;
+  }
+
+  el.innerHTML = `
+    <div class="match-card">
+      <div class="match-pitch">
+        <div class="streak-row">
+          <div class="streak-badge ${t1.streak > 0 ? 'active' : ''}">
+            ${streakDots(t1.streak)} Streak ${t1.streak}
+          </div>
+          <div class="streak-badge ${t2.streak > 0 ? 'active' : ''}" style="flex-direction:row-reverse;">
+            Streak ${t2.streak} ${streakDots(t2.streak)}
+          </div>
+        </div>
+        <div class="match-teams" style="margin-top:0.5rem;">
+          <div class="match-team">
+            <div class="team-name">${escHtml(t1.name)}</div>
+            <div class="team-players">${t1.players.length ? escHtml(t1.players.join(', ')) : '—'}</div>
+          </div>
+          <div class="vs-badge">VS</div>
+          <div class="match-team right">
+            <div class="team-name">${escHtml(t2.name)}</div>
+            <div class="team-players">${t2.players.length ? escHtml(t2.players.join(', ')) : '—'}</div>
+          </div>
+        </div>
+      </div>
+      <div class="match-actions">
+        <button class="btn-win btn-t1" onclick="teamWins(0)">🏆 ${escHtml(t1.name)} Win</button>
+        <button class="btn-win btn-t2" onclick="teamWins(1)">🏆 ${escHtml(t2.name)} Win</button>
+        <div class="draw-row">
+          <button class="btn-draw" onclick="draw()">🤝 Draw — Both Benched</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderQueue() {
+  const el = document.getElementById('queue-area');
+  if (state.queue.length === 0) {
+    el.innerHTML = `<div class="empty-state">No teams waiting</div>`;
+    return;
+  }
+  el.innerHTML = state.queue.map((t, i) => `
+    <div class="queue-item">
+      <div class="queue-pos">${i + 1}</div>
+      <div class="queue-info">
+        <div class="queue-team-name">${escHtml(t.name)}</div>
+        ${t.players.length ? `<div class="queue-players">${escHtml(t.players.join(', '))}</div>` : ''}
+      </div>
+      ${t.streak > 0 ? `<div class="queue-streak">🔥 ${t.streak}W</div>` : ''}
+    </div>`).join('');
+}
+
+function render() {
+  renderMatch();
+  renderQueue();
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+// Enter key on inputs
+document.getElementById('inp-players').addEventListener('keydown', e => { if (e.key === 'Enter') addTeam(); });
+document.getElementById('inp-team').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('inp-players').focus(); });
+
+loadState();
+render();
+</script>
+</body>
+</html>
