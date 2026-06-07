@@ -469,18 +469,37 @@ function teamWins(winnerIdx) {
   winner.streak += 1;
 
   const maxWins = parseInt(document.getElementById('inp-maxwins').value, 10);
+
   if (winner.streak >= maxWins) {
-    // Max streak reached — bench both: loser first, then winner
+    // ── MAX STREAK REACHED ──────────────────────────────────────────────────
+    // Reward: winner skips 1 queue position (sits in front of the loser).
+    //
+    // Strategy:
+    //   1. Push the loser to the back of the queue (last position).
+    //   2. Insert the winner at (queue.length - 1), i.e. one slot ahead of the
+    //      loser, using splice so the loser remains the very last entry.
+    //
+    // Example — queue before benching: [A, B, C]
+    //   After push(loser):              [A, B, C, loser]
+    //   After splice(3, 0, winner):     [A, B, C, winner, loser]
+    //                                                ↑ skipped 1 spot ahead
+    // ────────────────────────────────────────────────────────────────────────
     winner.streak = 0;
     loser.streak = 0;
     state.playing = [];
-    state.queue.push(loser);
-    state.queue.push(winner);
+
+    state.queue.push(loser);                              // loser → very back
+    state.queue.splice(state.queue.length - 1, 0, winner); // winner → 1 ahead of loser
+
     promoteFromQueue();
-    showToast(`🏆 Max wins reached! Both teams benched.`);
+    showToast(`🏆 Max wins! ${winner.name} skips 1 queue spot as a reward!`);
+
   } else {
-    // Winner stays — pull next challenger from queue BEFORE pushing loser,
-    // so the loser cannot immediately re-enter as the next opponent
+    // ── NORMAL WIN ───────────────────────────────────────────────────────────
+    // Winner stays on; loser goes to the back of the queue.
+    // Pull the next challenger BEFORE pushing the loser so the loser cannot
+    // immediately re-enter as the next opponent.
+    // ────────────────────────────────────────────────────────────────────────
     loser.streak = 0;
     const next = state.queue.shift();
     state.queue.push(loser);   // loser goes to back AFTER shift
@@ -492,6 +511,7 @@ function teamWins(winnerIdx) {
       showToast(`${winner.name} wins! Waiting for challenger...`);
     }
   }
+
   saveState();
   render();
 }
